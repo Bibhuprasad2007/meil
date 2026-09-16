@@ -19,3 +19,14 @@ export interface ToastMessage {
   type: 'info' | 'success' | 'warning' | 'error';
   message: string;
 }
+
+export interface DemoSession {
+  authenticated: boolean;
+  role: 'esg_admin';
+  mode: 'demo';
+  loginTime?: string;
+  user?: {
+    name: string;
+    email: string;
+  };
+}

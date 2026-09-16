@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Loader2, Lock, Mail, AlertCircle, Info } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, Loader2, Lock, Mail, AlertCircle, Info, ShieldCheck, Sparkles } from 'lucide-react';
 import type { PortalRole } from '../../types/auth';
+import { useDemoAuth } from '../../context/DemoAuthContext';
 
 interface RoleLoginFormProps {
   roleId: PortalRole;
@@ -15,13 +17,18 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
   onForgotPassword,
   onSubmitSuccess,
 }) => {
-  // SECURITY NOTE:
-  // Selecting a portal from the UI does not grant authorization.
-  // The backend authentication service must independently verify the user's
-  // cryptographically signed credentials, tenant membership, and assigned roles.
-  
+  /**
+   * SECURITY ARCHITECTURE NOTE:
+   * Selecting a portal from the UI does not grant authorization.
+   * Client-side credential checking is enabled exclusively for prototype demonstration of the
+   * ESG Admin role via environment variables. In production, the backend authentication service
+   * must verify cryptographically signed tokens and enforce tenant boundaries.
+   */
+  const { isDemoAuthEnabled, loginDemoAdmin, fillDemoCredentials } = useDemoAuth();
+  const navigate = useNavigate();
+
   const storageKey = `meil_saved_email_${roleId}`;
-  
+
   const [email, setEmail] = useState(() => {
     return localStorage.getItem(storageKey) || '';
   });
@@ -30,13 +37,23 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
   const [rememberEmail, setRememberEmail] = useState(() => {
     return Boolean(localStorage.getItem(storageKey));
   });
-  
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
 
+  const isEsgAdmin = roleId === 'esg-admin';
+
+  const handleUseDemoAdmin = () => {
+    const creds = fillDemoCredentials();
+    if (creds) {
+      setEmail(creds.email);
+      setPassword(creds.password);
+      setErrors({});
+    }
+  };
 
   const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: { email?: string; password?: string; general?: string } = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!email.trim()) {
@@ -64,6 +81,7 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
     }
 
     setIsLoading(true);
+    setErrors((prev) => ({ ...prev, general: undefined }));
 
     // Handle remember email safely (passwords are NEVER saved in localStorage)
     if (rememberEmail) {
@@ -72,23 +90,73 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
       localStorage.removeItem(storageKey);
     }
 
-    // Simulate authentication processing
+    if (isEsgAdmin && isDemoAuthEnabled) {
+      // Execute demo ESG Admin authentication
+      const result = await loginDemoAdmin(email, password);
+      setIsLoading(false);
+
+      if (result.success) {
+        onSubmitSuccess('ESG Admin demo session initialized.');
+        navigate('/admin/dashboard');
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          general: result.error || 'Invalid ESG Admin credentials.',
+        }));
+      }
+      return;
+    }
+
+    // For other roles or when demo auth is disabled:
     setTimeout(() => {
       setIsLoading(false);
-      onSubmitSuccess('Authentication service will be connected in the next phase.');
-    }, 1200);
+      onSubmitSuccess('Authentication service will be connected in subsequent phases.');
+    }, 1000);
   };
-
-  const isEsgAdmin = roleId === 'esg-admin';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-slate-800" noValidate>
+      {/* Demo Access Box - Only visible for ESG Admin when VITE_ENABLE_DEMO_AUTH is true */}
+      {isEsgAdmin && isDemoAuthEnabled && (
+        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div>
+                <span className="font-semibold block text-emerald-950">
+                  Demo Prototype Access Enabled
+                </span>
+                <span className="text-[11px] text-emerald-700">
+                  Click to auto-populate test ESG Admin credentials
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleUseDemoAdmin}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs rounded-md shadow-xs transition-colors shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Use Demo Admin</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {!isEsgAdmin && (
         <div className="flex items-start gap-2.5 p-3 rounded-lg bg-sky-50/80 border border-sky-200 text-sky-900 text-xs leading-relaxed">
           <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
           <span>
             Logging in to <strong className="font-semibold">{roleTitle}</strong>. Your account must be created and authorized by the Company Admin.
           </span>
+        </div>
+      )}
+
+      {/* General Form Error */}
+      {errors.general && (
+        <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <span>{errors.general}</span>
         </div>
       )}
 
