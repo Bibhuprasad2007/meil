@@ -17,6 +17,17 @@ import { EvidenceAuditPage } from './components/admin/pages/EvidenceAuditPage';
 import { ReportReadinessPage } from './components/admin/pages/ReportReadinessPage';
 import { SettingsPage } from './components/admin/pages/SettingsPage';
 
+// Reviewer Pages & Layout
+import { ProtectedReviewerRoute } from './components/reviewer/layout/ProtectedReviewerRoute';
+import { ReviewerLayout } from './components/reviewer/layout/ReviewerLayout';
+import { ReviewerDashboardPage } from './components/reviewer/pages/ReviewerDashboardPage';
+import { ReviewQueuePage } from './components/reviewer/pages/ReviewQueuePage';
+import { SubmissionDetailPage } from './components/reviewer/pages/SubmissionDetailPage';
+import { ValidationIssuesPage } from './components/reviewer/pages/ValidationIssuesPage';
+import { EvidenceReviewPage } from './components/reviewer/pages/EvidenceReviewPage';
+import { ActivityHistoryPage } from './components/reviewer/pages/ActivityHistoryPage';
+import { ReviewerSettingsPage } from './components/reviewer/pages/ReviewerSettingsPage';
+
 export function App() {
   return (
     <DemoAuthProvider>
@@ -48,6 +59,27 @@ export function App() {
             <Route path="evidence-audit" element={<EvidenceAuditPage />} />
             <Route path="report-readiness" element={<ReportReadinessPage />} />
             <Route path="settings" element={<SettingsPage />} />
+          </Route>
+
+          {/* Root /reviewer redirection */}
+          <Route path="/reviewer" element={<Navigate to="/reviewer/dashboard" replace />} />
+
+          {/* Protected Reviewer / Approver Portal Subsystem */}
+          <Route
+            path="/reviewer"
+            element={
+              <ProtectedReviewerRoute>
+                <ReviewerLayout />
+              </ProtectedReviewerRoute>
+            }
+          >
+            <Route path="dashboard" element={<ReviewerDashboardPage />} />
+            <Route path="review-queue" element={<ReviewQueuePage />} />
+            <Route path="submission-detail" element={<SubmissionDetailPage />} />
+            <Route path="validation-issues" element={<ValidationIssuesPage />} />
+            <Route path="evidence-review" element={<EvidenceReviewPage />} />
+            <Route path="activity-history" element={<ActivityHistoryPage />} />
+            <Route path="settings" element={<ReviewerSettingsPage />} />
           </Route>
 
           {/* Fallback */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Lock, Mail, AlertCircle, Info, ShieldCheck, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, AlertCircle, Info, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
 import type { PortalRole } from '../../types/auth';
 import { useDemoAuth } from '../../context/DemoAuthContext';
 
@@ -21,10 +21,18 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
    * SECURITY ARCHITECTURE NOTE:
    * Selecting a portal from the UI does not grant authorization.
    * Client-side credential checking is enabled exclusively for prototype demonstration of the
-   * ESG Admin role via environment variables. In production, the backend authentication service
-   * must verify cryptographically signed tokens and enforce tenant boundaries.
+   * ESG Admin and Reviewer / Approver roles via environment variables. In production, the backend
+   * authentication service must verify cryptographically signed tokens and enforce tenant boundaries.
    */
-  const { isDemoAuthEnabled, loginDemoAdmin, fillDemoCredentials } = useDemoAuth();
+  const {
+    isDemoAdminEnabled,
+    isDemoReviewerEnabled,
+    loginDemoAdmin,
+    loginDemoReviewer,
+    fillDemoAdminCredentials,
+    fillDemoReviewerCredentials,
+  } = useDemoAuth();
+
   const navigate = useNavigate();
 
   const storageKey = `meil_saved_email_${roleId}`;
@@ -42,9 +50,19 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const isEsgAdmin = roleId === 'esg-admin';
+  const isReviewer = roleId === 'reviewer-approver';
 
   const handleUseDemoAdmin = () => {
-    const creds = fillDemoCredentials();
+    const creds = fillDemoAdminCredentials();
+    if (creds) {
+      setEmail(creds.email);
+      setPassword(creds.password);
+      setErrors({});
+    }
+  };
+
+  const handleUseDemoReviewer = () => {
+    const creds = fillDemoReviewerCredentials();
     if (creds) {
       setEmail(creds.email);
       setPassword(creds.password);
@@ -90,8 +108,8 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
       localStorage.removeItem(storageKey);
     }
 
-    if (isEsgAdmin && isDemoAuthEnabled) {
-      // Execute demo ESG Admin authentication
+    // ESG Admin Demo Login
+    if (isEsgAdmin && isDemoAdminEnabled) {
       const result = await loginDemoAdmin(email, password);
       setIsLoading(false);
 
@@ -107,6 +125,23 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
       return;
     }
 
+    // Reviewer / Approver Demo Login
+    if (isReviewer && isDemoReviewerEnabled) {
+      const result = await loginDemoReviewer(email, password);
+      setIsLoading(false);
+
+      if (result.success) {
+        onSubmitSuccess('Reviewer demo session initialized.');
+        navigate('/reviewer/dashboard');
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          general: result.error || 'Invalid Reviewer credentials.',
+        }));
+      }
+      return;
+    }
+
     // For other roles or when demo auth is disabled:
     setTimeout(() => {
       setIsLoading(false);
@@ -116,15 +151,15 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-slate-800" noValidate>
-      {/* Demo Access Box - Only visible for ESG Admin when VITE_ENABLE_DEMO_AUTH is true */}
-      {isEsgAdmin && isDemoAuthEnabled && (
+      {/* Demo Access Box for ESG Admin */}
+      {isEsgAdmin && isDemoAdminEnabled && (
         <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <div>
                 <span className="font-semibold block text-emerald-950">
-                  Demo Prototype Access Enabled
+                  Demo Admin Access Enabled
                 </span>
                 <span className="text-[11px] text-emerald-700">
                   Click to auto-populate test ESG Admin credentials
@@ -143,7 +178,34 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
         </div>
       )}
 
-      {!isEsgAdmin && (
+      {/* Demo Access Box for Reviewer / Approver */}
+      {isReviewer && isDemoReviewerEnabled && (
+        <div className="p-3 rounded-lg bg-sky-50 border border-sky-200 text-sky-950 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-sky-600 shrink-0" />
+              <div>
+                <span className="font-semibold block text-sky-950">
+                  Demo Reviewer Access Enabled
+                </span>
+                <span className="text-[11px] text-sky-700">
+                  Click to auto-populate test Reviewer credentials
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleUseDemoReviewer}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#003B73] hover:bg-[#002B54] active:bg-[#002244] text-white font-semibold text-xs rounded-md shadow-xs transition-colors shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Use Demo Reviewer</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!isEsgAdmin && !isReviewer && (
         <div className="flex items-start gap-2.5 p-3 rounded-lg bg-sky-50/80 border border-sky-200 text-sky-900 text-xs leading-relaxed">
           <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
           <span>

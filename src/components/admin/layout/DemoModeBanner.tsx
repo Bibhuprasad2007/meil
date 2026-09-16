@@ -3,9 +3,9 @@ import { ShieldCheck, Info } from 'lucide-react';
 import { useDemoAuth } from '../../../context/DemoAuthContext';
 
 export const DemoModeBanner: React.FC = () => {
-  const { isDemoAuthEnabled } = useDemoAuth();
+  const { isDemoAdminEnabled } = useDemoAuth();
 
-  if (!isDemoAuthEnabled) return null;
+  if (!isDemoAdminEnabled) return null;
 
   return (
     <div className="bg-amber-50 border-b border-amber-200/80 px-4 py-2 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-2">
