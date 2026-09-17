@@ -3,13 +3,13 @@ import React, { createContext, useContext, useState } from 'react';
 import type { DemoSession } from '../types/auth';
 
 /**
- * PROTOTYPE DEMO AUTHENTICATION CONTEXT (ESG Admin & Reviewer / Approver)
+ * PROTOTYPE DEMO AUTHENTICATION CONTEXT (ESG Admin, Reviewer, Contributor & Management)
  * 
  * SECURITY NOTICE:
  * Vite environment variables (prefixed with VITE_) are embedded directly into the
  * client-side bundle and are visible to anyone inspecting the network/source code.
  * This client-side credential verification is implemented solely for prototype demonstration
- * and UI evaluation of the ESG Admin and Reviewer / Approver portals.
+ * and UI evaluation of the ESG Admin, Reviewer / Approver, Data Contributor, and Management portals.
  * 
  * NEVER use client-side authentication or embed real credentials in production.
  * In production, authentication must be verified by a secure backend service using
@@ -25,13 +25,21 @@ interface DemoAuthContextType {
   isAuthenticated: boolean;
   isAdminAuthenticated: boolean;
   isReviewerAuthenticated: boolean;
-  userRole: 'esg_admin' | 'reviewer' | null;
+  isContributorAuthenticated: boolean;
+  isManagementAuthenticated: boolean;
+  userRole: 'esg_admin' | 'reviewer' | 'contributor' | 'management' | null;
   isDemoAdminEnabled: boolean;
   isDemoReviewerEnabled: boolean;
+  isDemoContributorEnabled: boolean;
+  isDemoManagementEnabled: boolean;
   loginDemoAdmin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginDemoReviewer: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginDemoContributor: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginDemoManagement: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   fillDemoAdminCredentials: () => { email: string; password: string } | null;
   fillDemoReviewerCredentials: () => { email: string; password: string } | null;
+  fillDemoContributorCredentials: () => { email: string; password: string } | null;
+  fillDemoManagementCredentials: () => { email: string; password: string } | null;
   logout: () => void;
 }
 
@@ -43,7 +51,10 @@ export const DemoAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const stored = sessionStorage.getItem(SESSION_STORAGE_KEY) || sessionStorage.getItem(LEGACY_ADMIN_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed?.authenticated === true && (parsed?.role === 'esg_admin' || parsed?.role === 'reviewer')) {
+        if (
+          parsed?.authenticated === true &&
+          (parsed?.role === 'esg_admin' || parsed?.role === 'reviewer' || parsed?.role === 'contributor' || parsed?.role === 'management')
+        ) {
           return parsed as DemoSession;
         }
       }
@@ -63,6 +74,16 @@ export const DemoAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const configuredReviewerEmail = (import.meta.env.VITE_DEMO_REVIEWER_EMAIL as string) || '';
   const configuredReviewerPassword = (import.meta.env.VITE_DEMO_REVIEWER_PASSWORD as string) || '';
 
+  // Read environment variables for Contributor
+  const isDemoContributorEnabled = import.meta.env.VITE_ENABLE_DEMO_CONTRIBUTOR_AUTH === 'true';
+  const configuredContributorEmail = (import.meta.env.VITE_DEMO_CONTRIBUTOR_EMAIL as string) || '';
+  const configuredContributorPassword = (import.meta.env.VITE_DEMO_CONTRIBUTOR_PASSWORD as string) || '';
+
+  // Read environment variables for Management
+  const isDemoManagementEnabled = import.meta.env.VITE_ENABLE_DEMO_MANAGEMENT_AUTH === 'true';
+  const configuredManagementEmail = (import.meta.env.VITE_DEMO_MANAGEMENT_EMAIL as string) || '';
+  const configuredManagementPassword = (import.meta.env.VITE_DEMO_MANAGEMENT_PASSWORD as string) || '';
+
   const fillDemoAdminCredentials = () => {
     if (!isDemoAdminEnabled || !configuredAdminEmail || !configuredAdminPassword) {
       return null;
@@ -80,6 +101,26 @@ export const DemoAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return {
       email: configuredReviewerEmail,
       password: configuredReviewerPassword,
+    };
+  };
+
+  const fillDemoContributorCredentials = () => {
+    if (!isDemoContributorEnabled || !configuredContributorEmail || !configuredContributorPassword) {
+      return null;
+    }
+    return {
+      email: configuredContributorEmail,
+      password: configuredContributorPassword,
+    };
+  };
+
+  const fillDemoManagementCredentials = () => {
+    if (!isDemoManagementEnabled || !configuredManagementEmail || !configuredManagementPassword) {
+      return null;
+    }
+    return {
+      email: configuredManagementEmail,
+      password: configuredManagementPassword,
     };
   };
 
@@ -169,6 +210,92 @@ export const DemoAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   };
 
+  const loginDemoContributor = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!isDemoContributorEnabled) {
+      return {
+        success: false,
+        error: 'Data Contributor demo authentication is disabled. Backend integration will be connected in future phases.',
+      };
+    }
+
+    const trimmedInputEmail = email.trim().toLowerCase();
+    const targetEmail = configuredContributorEmail.trim().toLowerCase();
+
+    if (trimmedInputEmail === targetEmail && password === configuredContributorPassword) {
+      const demoSessionData: DemoSession = {
+        authenticated: true,
+        role: 'contributor',
+        mode: 'demo',
+        loginTime: new Date().toISOString(),
+        user: {
+          name: 'Demo Contributor',
+          email: configuredContributorEmail,
+        },
+      };
+
+      try {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(demoSessionData));
+        sessionStorage.removeItem(LEGACY_ADMIN_KEY);
+      } catch (e) {
+        console.error('Failed to write session to sessionStorage:', e);
+      }
+
+      setSession(demoSessionData);
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: 'Invalid Data Contributor credentials. Please check the email and password.',
+    };
+  };
+
+  const loginDemoManagement = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!isDemoManagementEnabled) {
+      return {
+        success: false,
+        error: 'Management demo authentication is disabled. Backend integration will be connected in future phases.',
+      };
+    }
+
+    const trimmedInputEmail = email.trim().toLowerCase();
+    const targetEmail = configuredManagementEmail.trim().toLowerCase();
+
+    if (trimmedInputEmail === targetEmail && password === configuredManagementPassword) {
+      const demoSessionData: DemoSession = {
+        authenticated: true,
+        role: 'management',
+        mode: 'demo',
+        loginTime: new Date().toISOString(),
+        user: {
+          name: 'Demo Management User',
+          email: configuredManagementEmail,
+        },
+      };
+
+      try {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(demoSessionData));
+        sessionStorage.removeItem(LEGACY_ADMIN_KEY);
+      } catch (e) {
+        console.error('Failed to write session to sessionStorage:', e);
+      }
+
+      setSession(demoSessionData);
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: 'Invalid Management credentials. Please check the email and password.',
+    };
+  };
+
   const logout = () => {
     try {
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
@@ -186,13 +313,21 @@ export const DemoAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isAuthenticated: Boolean(session?.authenticated),
         isAdminAuthenticated: Boolean(session?.authenticated && session?.role === 'esg_admin'),
         isReviewerAuthenticated: Boolean(session?.authenticated && session?.role === 'reviewer'),
+        isContributorAuthenticated: Boolean(session?.authenticated && session?.role === 'contributor'),
+        isManagementAuthenticated: Boolean(session?.authenticated && session?.role === 'management'),
         userRole: session?.role || null,
         isDemoAdminEnabled,
         isDemoReviewerEnabled,
+        isDemoContributorEnabled,
+        isDemoManagementEnabled,
         loginDemoAdmin,
         loginDemoReviewer,
+        loginDemoContributor,
+        loginDemoManagement,
         fillDemoAdminCredentials,
         fillDemoReviewerCredentials,
+        fillDemoContributorCredentials,
+        fillDemoManagementCredentials,
         logout,
       }}
     >
@@ -208,3 +343,4 @@ export const useDemoAuth = (): DemoAuthContextType => {
   }
   return context;
 };
+

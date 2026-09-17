@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Lock, Mail, AlertCircle, Info, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, AlertCircle, Info, ShieldCheck, Sparkles, UserCheck, FileText, BarChart3 } from 'lucide-react';
 import type { PortalRole } from '../../types/auth';
 import { useDemoAuth } from '../../context/DemoAuthContext';
 
@@ -27,10 +27,16 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
   const {
     isDemoAdminEnabled,
     isDemoReviewerEnabled,
+    isDemoContributorEnabled,
+    isDemoManagementEnabled,
     loginDemoAdmin,
     loginDemoReviewer,
+    loginDemoContributor,
+    loginDemoManagement,
     fillDemoAdminCredentials,
     fillDemoReviewerCredentials,
+    fillDemoContributorCredentials,
+    fillDemoManagementCredentials,
   } = useDemoAuth();
 
   const navigate = useNavigate();
@@ -51,6 +57,8 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
 
   const isEsgAdmin = roleId === 'esg-admin';
   const isReviewer = roleId === 'reviewer-approver';
+  const isContributor = roleId === 'data-contributor';
+  const isManagement = roleId === 'management';
 
   const handleUseDemoAdmin = () => {
     const creds = fillDemoAdminCredentials();
@@ -63,6 +71,24 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
 
   const handleUseDemoReviewer = () => {
     const creds = fillDemoReviewerCredentials();
+    if (creds) {
+      setEmail(creds.email);
+      setPassword(creds.password);
+      setErrors({});
+    }
+  };
+
+  const handleUseDemoContributor = () => {
+    const creds = fillDemoContributorCredentials();
+    if (creds) {
+      setEmail(creds.email);
+      setPassword(creds.password);
+      setErrors({});
+    }
+  };
+
+  const handleUseDemoManagement = () => {
+    const creds = fillDemoManagementCredentials();
     if (creds) {
       setEmail(creds.email);
       setPassword(creds.password);
@@ -142,6 +168,40 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
       return;
     }
 
+    // Data Contributor Demo Login
+    if (isContributor && isDemoContributorEnabled) {
+      const result = await loginDemoContributor(email, password);
+      setIsLoading(false);
+
+      if (result.success) {
+        onSubmitSuccess('Data Contributor demo session initialized.');
+        navigate('/contributor/dashboard');
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          general: result.error || 'Invalid Data Contributor credentials.',
+        }));
+      }
+      return;
+    }
+
+    // Executive Management Demo Login
+    if (isManagement && isDemoManagementEnabled) {
+      const result = await loginDemoManagement(email, password);
+      setIsLoading(false);
+
+      if (result.success) {
+        onSubmitSuccess('Executive Management demo session initialized.');
+        navigate('/management/dashboard');
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          general: result.error || 'Invalid Management credentials.',
+        }));
+      }
+      return;
+    }
+
     // For other roles or when demo auth is disabled:
     setTimeout(() => {
       setIsLoading(false);
@@ -205,7 +265,61 @@ export const RoleLoginForm: React.FC<RoleLoginFormProps> = ({
         </div>
       )}
 
-      {!isEsgAdmin && !isReviewer && (
+      {/* Demo Access Box for Data Contributor */}
+      {isContributor && isDemoContributorEnabled && (
+        <div className="p-3 rounded-lg bg-teal-50 border border-teal-200 text-teal-950 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-teal-600 shrink-0" />
+              <div>
+                <span className="font-semibold block text-teal-950">
+                  Demo Contributor Access Enabled
+                </span>
+                <span className="text-[11px] text-teal-700">
+                  Click to auto-populate test Data Contributor credentials
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleUseDemoContributor}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-teal-700 hover:bg-teal-800 active:bg-teal-900 text-white font-semibold text-xs rounded-md shadow-xs transition-colors shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Use Demo Contributor</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Demo Access Box for Executive Management */}
+      {isManagement && isDemoManagementEnabled && (
+        <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-950 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-indigo-600 shrink-0" />
+              <div>
+                <span className="font-semibold block text-indigo-950">
+                  Demo Management Access Enabled
+                </span>
+                <span className="text-[11px] text-indigo-700">
+                  Click to auto-populate test Management credentials
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleUseDemoManagement}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-700 hover:bg-indigo-800 active:bg-indigo-900 text-white font-semibold text-xs rounded-md shadow-xs transition-colors shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Use Demo Management Login</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!isEsgAdmin && !isReviewer && !isContributor && !isManagement && (
         <div className="flex items-start gap-2.5 p-3 rounded-lg bg-sky-50/80 border border-sky-200 text-sky-900 text-xs leading-relaxed">
           <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
           <span>

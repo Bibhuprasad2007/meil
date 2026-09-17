@@ -28,6 +28,25 @@ import { EvidenceReviewPage } from './components/reviewer/pages/EvidenceReviewPa
 import { ActivityHistoryPage } from './components/reviewer/pages/ActivityHistoryPage';
 import { ReviewerSettingsPage } from './components/reviewer/pages/ReviewerSettingsPage';
 
+// Contributor Pages & Layout
+import { ProtectedContributorRoute } from './components/contributor/layout/ProtectedContributorRoute';
+import { ContributorLayout } from './components/contributor/layout/ContributorLayout';
+import { ContributorDashboard } from './components/contributor/pages/ContributorDashboard';
+import { ContributorAssignmentsPage } from './components/contributor/pages/ContributorAssignmentsPage';
+import { AssignmentDataEntryPage } from './components/contributor/pages/AssignmentDataEntryPage';
+import { BulkDataUploadPage } from './components/contributor/pages/BulkDataUploadPage';
+import { ContributorEvidencePage } from './components/contributor/pages/ContributorEvidencePage';
+import { ContributorCorrectionsPage } from './components/contributor/pages/ContributorCorrectionsPage';
+import { ContributorSubmissionsPage } from './components/contributor/pages/ContributorSubmissionsPage';
+import { ContributorActivityPage } from './components/contributor/pages/ContributorActivityPage';
+
+// Management Pages & Layout
+import { ProtectedManagementRoute } from './components/management/layout/ProtectedManagementRoute';
+import { ManagementLayout } from './components/management/layout/ManagementLayout';
+import { ManagementDashboard } from './components/management/pages/ManagementDashboard';
+import { ESGOverviewPage } from './components/management/pages/ESGOverviewPage';
+import { PlaceholderPage } from './components/management/pages/PlaceholderPage';
+
 export function App() {
   return (
     <DemoAuthProvider>
@@ -80,6 +99,52 @@ export function App() {
             <Route path="evidence-review" element={<EvidenceReviewPage />} />
             <Route path="activity-history" element={<ActivityHistoryPage />} />
             <Route path="settings" element={<ReviewerSettingsPage />} />
+          </Route>
+
+          {/* Root /contributor redirection */}
+          <Route path="/contributor" element={<Navigate to="/contributor/dashboard" replace />} />
+
+          {/* Protected Data Contributor Portal Subsystem */}
+          <Route
+            path="/contributor"
+            element={
+              <ProtectedContributorRoute>
+                <ContributorLayout />
+              </ProtectedContributorRoute>
+            }
+          >
+            <Route path="dashboard" element={<ContributorDashboard />} />
+            <Route path="assignments" element={<ContributorAssignmentsPage />} />
+            <Route path="assignments/:assignmentId" element={<AssignmentDataEntryPage />} />
+            <Route path="bulk-upload" element={<BulkDataUploadPage />} />
+            <Route path="evidence" element={<ContributorEvidencePage />} />
+            <Route path="corrections" element={<ContributorCorrectionsPage />} />
+            <Route path="submissions" element={<ContributorSubmissionsPage />} />
+            <Route path="activity" element={<ContributorActivityPage />} />
+          </Route>
+
+          {/* Management Portal Redirection */}
+          <Route path="/management" element={<Navigate to="/management/dashboard" replace />} />
+
+          {/* Protected Management Portal Subsystem */}
+          <Route
+            path="/management"
+            element={
+              <ProtectedManagementRoute>
+                <ManagementLayout />
+              </ProtectedManagementRoute>
+            }
+          >
+            <Route path="dashboard" element={<ManagementDashboard />} />
+            <Route path="esg-overview" element={<ESGOverviewPage />} />
+            <Route path="environmental" element={<PlaceholderPage title="Environmental" />} />
+            <Route path="social" element={<PlaceholderPage title="Social" />} />
+            <Route path="governance" element={<PlaceholderPage title="Governance" />} />
+            <Route path="brsr-readiness" element={<PlaceholderPage title="BRSR Readiness" />} />
+            <Route path="risks" element={<PlaceholderPage title="Risks & Exceptions" />} />
+            <Route path="sign-off" element={<PlaceholderPage title="Management Sign-Off" />} />
+            <Route path="reports" element={<PlaceholderPage title="Reports" />} />
+            <Route path="activity" element={<PlaceholderPage title="My Activity" />} />
           </Route>
 
           {/* Fallback */}

@@ -2,16 +2,15 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useDemoAuth } from '../../../context/DemoAuthContext';
 
-interface ProtectedAdminRouteProps {
+interface ProtectedContributorRouteProps {
   children: React.ReactElement;
 }
 
-export const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({ children }) => {
-  const { isAdminAuthenticated } = useDemoAuth();
+export const ProtectedContributorRoute: React.FC<ProtectedContributorRouteProps> = ({ children }) => {
+  const { isContributorAuthenticated } = useDemoAuth();
   const location = useLocation();
 
-  if (!isAdminAuthenticated) {
-    // Redirect to landing / login page if not authenticated as ESG Admin
+  if (!isContributorAuthenticated) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
