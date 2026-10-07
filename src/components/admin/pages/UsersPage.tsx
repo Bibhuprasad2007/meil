@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useNexusData } from '../../../context/NexusDataContext';
 import { Users, UserPlus, Mail, Key, Shield, UserX, Info } from 'lucide-react';
 import { PageHeader } from '../common/PageHeader';
 import { FilterBar } from '../common/FilterBar';
@@ -13,6 +14,7 @@ interface OutletContextType {
 export const UsersPage: React.FC = () => {
   const { addToast } = useOutletContext<OutletContextType>();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { users, organizations } = useNexusData();
 
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -146,14 +148,69 @@ export const UsersPage: React.FC = () => {
       />
 
       {/* Users Table Shell */}
-      <DataTableShell
-        columns={tableColumns}
-        emptyIcon={Users}
-        emptyTitle="No users configured"
-        emptyDescription="Create user accounts and assign reporting responsibilities to begin ESG data collection."
-        emptyActionText="Create User"
-        onEmptyAction={() => setIsModalOpen(true)}
-      />
+      <div className="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
+        {users.length === 0 ? (
+          <DataTableShell
+            columns={tableColumns}
+            emptyIcon={Users}
+            emptyTitle="No users configured"
+            emptyDescription="Create user accounts and assign reporting responsibilities to begin ESG data collection."
+            emptyActionText="Create User"
+            onEmptyAction={() => setIsModalOpen(true)}
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  {tableColumns.map((col) => (
+                    <th key={col} className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-200">
+                {users.map((user) => {
+                  const org = organizations.find((o) => o.id === user.orgScopeId);
+                  return (
+                    <tr key={user.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-800 font-bold">
+                            {user.name.charAt(0)}
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-slate-900">{user.name}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{user.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{user.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{user.department || '--'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 font-medium capitalize">
+                        {user.role.replace('_', ' ')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                        {org?.name || 'All'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                          Active
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">--</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                        <button className="text-teal-600 hover:text-teal-900 mr-3">Edit</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Modal */}
       <CreateUserModal

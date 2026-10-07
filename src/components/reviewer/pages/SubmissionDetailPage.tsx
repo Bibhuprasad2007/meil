@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useNexusData } from '../../../context/NexusDataContext';
 import {
   FileSearch,
   FileText,
@@ -26,7 +28,38 @@ const TABS: { id: DetailTab; label: string; icon: React.ComponentType<{ classNam
 ];
 
 export const SubmissionDetailPage: React.FC = () => {
+  const { assignmentId } = useParams<{ assignmentId: string }>();
+  const navigate = useNavigate();
+  const { assignments, submissions, users, organizations, approveSubmission, requestCorrection, rejectSubmission } = useNexusData();
+
   const [activeTab, setActiveTab] = useState<DetailTab>('submitted-data');
+  const [decisionRemarks, setDecisionRemarks] = useState('');
+
+  const currentAssignment = assignments.find(a => a.id === assignmentId);
+  const currentSubmission = submissions.find(s => s.assignmentId === assignmentId);
+  const currentUser = users.find(u => u.id === 'u_rev'); // assuming reviewer user
+  const reviewerName = currentUser?.name;  
+  const contributor = users.find(u => u.id === currentAssignment?.contributorId);
+  const org = organizations.find(o => o.id === currentAssignment?.orgId);
+
+  const handleDecision = (status: 'approved' | 'rejected' | 'correction_requested') => {
+    if (!currentAssignment) return;
+    if (status === 'approved') {
+      approveSubmission(currentAssignment.id, reviewerName, decisionRemarks);
+    } else if (status === 'rejected') {
+      rejectSubmission(currentAssignment.id, decisionRemarks || 'Rejected by reviewer', reviewerName, decisionRemarks);
+    } else if (status === 'correction_requested') {
+      requestCorrection(currentAssignment.id, {
+        problem: 'Data issue requiring correction',
+        requiredCorrection: 'Provide correct data and supporting evidence',
+        evidenceNeeded: 'Additional documents if needed',
+        deadline: new Date().toISOString().split('T')[0],
+        comment: decisionRemarks,
+        reviewerName,
+      });
+    }
+    navigate('/reviewer/review-queue');
+  };
 
   return (
     <div className="space-y-6">
@@ -42,9 +75,11 @@ export const SubmissionDetailPage: React.FC = () => {
             <FileSearch className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-800">No Submission Selected</h2>
+            <h2 className="text-sm font-bold text-slate-800">
+              {currentAssignment ? `Submission: ${currentAssignment.indicatorName}` : 'No Submission Selected'}
+            </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Select a submission from the Review Queue to view its complete details here.
+              {currentAssignment ? `Task ID: ${currentAssignment.id}` : 'Select a submission from the Review Queue to view its complete details here.'}
             </p>
           </div>
         </div>
@@ -52,16 +87,12 @@ export const SubmissionDetailPage: React.FC = () => {
         {/* Submission Metadata Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 border-t border-slate-100 pt-4">
           {[
-            { label: 'Disclosure Code', value: '--' },
-            { label: 'BRSR Section', value: '--' },
-            { label: 'Reporting Period', value: '--' },
-            { label: 'Contributor', value: '--' },
-            { label: 'Review Status', value: '--' },
-            { label: 'Company / Entity', value: '--' },
-            { label: 'Business Unit', value: '--' },
-            { label: 'Project / Plant', value: '--' },
-            { label: 'Department', value: '--' },
-            { label: 'Due Date', value: '--' },
+            { label: 'Disclosure Code', value: currentAssignment?.indicatorCode || '--' },
+            { label: 'Reporting Period', value: currentAssignment?.reportingPeriod || '--' },
+            { label: 'Contributor', value: contributor?.name || '--' },
+            { label: 'Review Status', value: currentAssignment?.status.replace('_', ' ').toUpperCase() || '--' },
+            { label: 'Company / Entity', value: org?.name || '--' },
+            { label: 'Due Date', value: currentAssignment?.dueDate || '--' },
           ].map((field) => (
             <div key={field.label}>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
@@ -101,11 +132,31 @@ export const SubmissionDetailPage: React.FC = () => {
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'submitted-data' && (
-            <EmptyState
-              icon={FileText}
-              title="No Submitted Data"
-              description="Submitted field values, units of measurement, methodology notes, year-on-year comparisons, and variance calculations will appear here once a submission is loaded from the backend."
-            />
+            currentSubmission ? (
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h3 className="text-sm font-semibold text-slate-700 mb-4">Reported Values</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase">Value</label>
+                    <p className="text-base font-medium">{currentSubmission.value}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase">Unit</label>
+                    <p className="text-base font-medium">{currentSubmission.unit}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-slate-500 uppercase">Comments/Remarks</label>
+                    <p className="text-sm">{currentSubmission.comments || 'No remarks.'}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                icon={FileText}
+                title="No Submitted Data"
+                description="Submitted field values will appear here once a submission is loaded."
+              />
+            )
           )}
 
           {activeTab === 'validation-checks' && (
@@ -175,33 +226,29 @@ export const SubmissionDetailPage: React.FC = () => {
                 compact
               />
 
-              {/* Decision Actions (Disabled - Backend Required) */}
+              {/* Decision Actions */}
               <div className="border-t border-slate-100 pt-5">
-                <BackendNotice
-                  message="Review decisions (Approve / Request Correction / Reject) will be recorded in the backend audit trail when the service is connected."
-                />
-
                 <div className="flex flex-wrap gap-3 mt-4">
                   <button
                     type="button"
-                    disabled
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-lg opacity-50 cursor-not-allowed"
+                    onClick={() => handleDecision('approved')}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Approve Submission</span>
                   </button>
                   <button
                     type="button"
-                    disabled
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-amber-600 rounded-lg opacity-50 cursor-not-allowed"
+                    onClick={() => handleDecision('correction_requested')}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
                   >
                     <AlertTriangle className="w-4 h-4" />
                     <span>Request Correction</span>
                   </button>
                   <button
                     type="button"
-                    disabled
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-rose-600 rounded-lg opacity-50 cursor-not-allowed"
+                    onClick={() => handleDecision('rejected')}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors"
                   >
                     <XCircle className="w-4 h-4" />
                     <span>Reject Submission</span>
@@ -214,10 +261,11 @@ export const SubmissionDetailPage: React.FC = () => {
                     Decision Remarks
                   </label>
                   <textarea
-                    disabled
-                    placeholder="Provide justification for your review decision… (Requires backend)"
+                    value={decisionRemarks}
+                    onChange={(e) => setDecisionRemarks(e.target.value)}
+                    placeholder="Provide justification for your review decision…"
                     rows={3}
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-400 placeholder-slate-400 cursor-not-allowed resize-none"
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 resize-none focus:outline-none focus:border-teal-700"
                   />
                 </div>
 

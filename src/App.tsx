@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DemoAuthProvider } from './context/DemoAuthContext';
+import { NexusDataProvider } from './context/NexusDataContext';
 import { LoginLandingPage } from './components/layout/LoginLandingPage';
 import { ProtectedAdminRoute } from './components/admin/layout/ProtectedAdminRoute';
 import { AdminLayout } from './components/admin/layout/AdminLayout';
@@ -11,11 +12,10 @@ import { UsersPage } from './components/admin/pages/UsersPage';
 import { ReportingCyclePage } from './components/admin/pages/ReportingCyclePage';
 import { BRSRFrameworkPage } from './components/admin/pages/BRSRFrameworkPage';
 import { TaskAssignmentPage } from './components/admin/pages/TaskAssignmentPage';
-import { SubmissionMonitorPage } from './components/admin/pages/SubmissionMonitorPage';
 import { ValidationPage } from './components/admin/pages/ValidationPage';
 import { EvidenceAuditPage } from './components/admin/pages/EvidenceAuditPage';
-import { ReportReadinessPage } from './components/admin/pages/ReportReadinessPage';
 import { SettingsPage } from './components/admin/pages/SettingsPage';
+
 
 // Reviewer Pages & Layout
 import { ProtectedReviewerRoute } from './components/reviewer/layout/ProtectedReviewerRoute';
@@ -50,7 +50,8 @@ import { PlaceholderPage } from './components/management/pages/PlaceholderPage';
 export function App() {
   return (
     <DemoAuthProvider>
-      <BrowserRouter>
+      <NexusDataProvider>
+        <BrowserRouter>
         <Routes>
           {/* Public Landing Page */}
           <Route path="/" element={<LoginLandingPage />} />
@@ -70,13 +71,18 @@ export function App() {
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="organization" element={<OrganizationPage />} />
             <Route path="users" element={<UsersPage />} />
-            <Route path="reporting-cycle" element={<ReportingCyclePage />} />
-            <Route path="brsr-framework" element={<BRSRFrameworkPage />} />
-            <Route path="task-assignment" element={<TaskAssignmentPage />} />
-            <Route path="submission-monitor" element={<SubmissionMonitorPage />} />
-            <Route path="validation" element={<ValidationPage />} />
-            <Route path="evidence-audit" element={<EvidenceAuditPage />} />
-            <Route path="report-readiness" element={<ReportReadinessPage />} />
+            <Route path="reporting-periods" element={<ReportingCyclePage />} />
+            <Route path="indicator-master" element={<BRSRFrameworkPage />} />
+            <Route path="data-collection" element={<TaskAssignmentPage />} />
+            <Route path="validation-rules" element={<ValidationPage />} />
+            <Route path="evidence-configuration" element={<EvidenceAuditPage />} />
+            <Route path="brsr-control-center" element={<PlaceholderPage title="BRSR Control Center" />} />
+            <Route path="brsr-core" element={<PlaceholderPage title="BRSR Core" />} />
+            <Route path="consolidation" element={<PlaceholderPage title="Consolidation" />} />
+            <Route path="assessment" element={<PlaceholderPage title="Assessment" />} />
+            <Route path="reports" element={<PlaceholderPage title="Reports" />} />
+            <Route path="notifications" element={<PlaceholderPage title="Notifications" />} />
+            <Route path="audit-logs" element={<PlaceholderPage title="Audit Logs" />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 
@@ -94,7 +100,7 @@ export function App() {
           >
             <Route path="dashboard" element={<ReviewerDashboardPage />} />
             <Route path="review-queue" element={<ReviewQueuePage />} />
-            <Route path="submission-detail" element={<SubmissionDetailPage />} />
+            <Route path="submission-detail/:assignmentId" element={<SubmissionDetailPage />} />
             <Route path="validation-issues" element={<ValidationIssuesPage />} />
             <Route path="evidence-review" element={<EvidenceReviewPage />} />
             <Route path="activity-history" element={<ActivityHistoryPage />} />
@@ -151,6 +157,7 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </NexusDataProvider>
     </DemoAuthProvider>
   );
 }

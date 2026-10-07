@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ClipboardList, Filter, RotateCcw, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useNexusData } from '../../../context/NexusDataContext';
 import { PageHeader } from '../../admin/common/PageHeader';
 import { DataTableShell } from '../../admin/common/DataTableShell';
 
@@ -52,6 +54,7 @@ export const ContributorAssignmentsPage: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  const { assignments, organizations } = useNexusData();
 
   const handleFilterChange = (key: string, value: string) => {
     setFilterValues((prev) => ({ ...prev, [key]: value }));
@@ -301,24 +304,59 @@ export const ContributorAssignmentsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Assignments Table (Starts Empty) */}
-      <DataTableShell
-        columns={[
-          'Task ID',
-          'Disclosure / Metric',
-          'BRSR Section / Principle',
-          'Assigned Scope',
-          'Reporting Period',
-          'Reporting Frequency',
-          'Unit',
-          'Due Date',
-          'Status',
-          { header: 'Actions', align: 'center' },
-        ]}
-        emptyIcon={ClipboardList}
-        emptyTitle="No reporting assignments are available."
-        emptyDescription="Assignments created by the ESG Admin will appear here."
-      />
+      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        {assignments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <ClipboardList className="w-12 h-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No reporting assignments are available.</h3>
+            <p className="text-gray-500 max-w-sm">
+              Assignments created by the ESG Admin will appear here.
+            </p>
+          </div>
+        ) : (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Indicator</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project / BU</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reporting Period</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {assignments.map((assignment) => {
+                const org = organizations.find(o => o.id === assignment.orgId);
+                return (
+                  <tr key={assignment.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {assignment.indicatorCode} - {assignment.indicatorName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {org?.name || assignment.orgId}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {assignment.reportingPeriod}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {assignment.dueDate}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {assignment.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <Link to={`/contributor/assignments/${assignment.id}`} className="text-teal-600 hover:text-teal-900 font-medium">Open Task</Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {/* Pagination Bar (Disabled when empty) */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-xl shadow-xs text-xs text-slate-500">

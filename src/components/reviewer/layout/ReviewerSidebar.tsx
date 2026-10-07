@@ -69,6 +69,19 @@ export const ReviewerSidebar: React.FC<ReviewerSidebarProps> = ({
         >
           {REVIEWER_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
+            
+            // Dynamic badge count
+            let badgeCount = 0;
+            if (item.badgeKey === 'pending') {
+              badgeCount = assignments.filter(a => a.status === 'under_review' || a.status === 'submitted' || a.status === 'resubmitted').length;
+            } else if (item.badgeKey === 'corrections') {
+              badgeCount = assignments.filter(a => a.status === 'correction_requested').length;
+            } else if (item.badgeKey === 'anomalies') {
+              badgeCount = submissions.filter(s => s.anomaly?.isAnomaly && !s.anomaly?.isExplanationAccepted).length;
+            } else if (item.badgeKey === 'notifications') {
+              badgeCount = notifications.filter(n => !n.isRead).length;
+            }
+
             return (
               <NavLink
                 key={item.path}
@@ -92,6 +105,17 @@ export const ReviewerSidebar: React.FC<ReviewerSidebarProps> = ({
                     />
                     {!isCollapsed && (
                       <span className="truncate flex-1">{item.name}</span>
+                    )}
+                    {badgeCount > 0 && !isCollapsed && (
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                        item.badgeKey === 'anomalies' 
+                          ? 'bg-amber-500 text-slate-900' 
+                          : item.badgeKey === 'corrections'
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-[#E31E24] text-white'
+                      }`}>
+                        {badgeCount}
+                      </span>
                     )}
                     {isActive && (
                       <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-sky-400 rounded-r-full" />

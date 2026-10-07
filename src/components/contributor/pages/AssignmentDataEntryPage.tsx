@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useOutletContext } from 'react-router-dom';
+import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
 import {
   FileText,
   FileEdit,
@@ -18,6 +18,7 @@ import { CalculationPanel } from '../panels/CalculationPanel';
 import { EvidenceAttachmentPanel } from '../panels/EvidenceAttachmentPanel';
 import { ValidationPanel } from '../panels/ValidationPanel';
 import { SubmitForReviewModal } from '../modals/SubmitForReviewModal';
+import { useNexusData } from '../../../context/NexusDataContext';
 
 type AssignmentTab =
   | 'task-overview'
@@ -44,6 +45,9 @@ const ASSIGNMENT_TABS: {
 
 export const AssignmentDataEntryPage: React.FC = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
+  const navigate = useNavigate();
+  const { submitData, assignments } = useNexusData();
+  const currentAssignment = assignments.find(a => a.id === assignmentId);
   const { addToast } = useOutletContext<{
     addToast: (msg: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
   }>();
@@ -51,6 +55,7 @@ export const AssignmentDataEntryPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AssignmentTab>('data-entry');
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [contributorComment, setContributorComment] = useState('');
+  const [pendingFormData, setPendingFormData] = useState<Record<string, unknown> | null>(null);
 
   const handleSaveDraft = () => {
     addToast('Draft saving will be enabled after backend integration.', 'info');
@@ -61,12 +66,23 @@ export const AssignmentDataEntryPage: React.FC = () => {
     addToast('Validation rules are not available for this assignment.', 'info');
   };
 
-  const handleOpenSubmitModal = () => {
+  const handleOpenSubmitModal = (data: Record<string, unknown>) => {
+    setPendingFormData(data);
     setIsSubmitModalOpen(true);
   };
 
   const handleSubmitConfirm = () => {
-    addToast('Submission workflow will be connected in the backend phase.', 'info');
+    if (!assignmentId || !pendingFormData) return;
+    submitData({
+      assignmentId,
+      value: Number(pendingFormData.reportedValue) || 0,
+      unit: String(pendingFormData.unit || ''),
+      comments: String(pendingFormData.remarks || ''),
+      submittedAt: new Date().toISOString()
+    });
+    addToast('Data successfully submitted for review.', 'success');
+    setIsSubmitModalOpen(false);
+    navigate('/contributor/assignments');
   };
 
   const handleAttemptUpload = (_fileInfo: { name: string; size: number }) => {
@@ -109,14 +125,14 @@ export const AssignmentDataEntryPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-slate-800">
-                  {assignmentId ? `Task ID: ${assignmentId}` : 'Task ID: --'}
+                  {currentAssignment ? `Task: ${currentAssignment.indicatorName}` : `Task ID: ${assignmentId || '--'}`}
                 </h2>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">
-                  Status: --
+                  Status: {currentAssignment?.status.replace('_', ' ') || '--'}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Disclosure Code: -- &middot; Metric Name: --
+                Disclosure Code: {currentAssignment?.indicatorCode || '--'} &middot; Metric Name: {currentAssignment?.indicatorName || '--'}
               </p>
             </div>
           </div>

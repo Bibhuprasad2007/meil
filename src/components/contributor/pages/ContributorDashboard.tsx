@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNexusData } from '../../../context/NexusDataContext';
 import {
   ClipboardList,
   Clock,
@@ -21,6 +22,21 @@ import { EmptyState } from '../../admin/common/EmptyState';
 
 export const ContributorDashboard: React.FC = () => {
   const navigate = useNavigate();
+
+  const { assignments } = useNexusData();
+
+  const totalAssignments = assignments.length;
+  const notStarted = assignments.filter(a => a.status === 'draft').length;
+  const drafts = notStarted;
+  const dueSoon = assignments.filter(a => {
+    const due = new Date(a.dueDate);
+    const now = new Date();
+    const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return due >= now && due <= in7Days;
+  }).length;
+  const overdue = assignments.filter(a => new Date(a.dueDate) < new Date() && a.status !== 'approved' && a.status !== 'rejected').length;
+  const corrections = assignments.filter(a => a.status === 'correction_requested').length;
+  const submitted = assignments.filter(a => ['submitted','under_review','resubmitted','approved'].includes(a.status)).length;
 
   return (
     <div className="space-y-8">
@@ -79,7 +95,7 @@ export const ContributorDashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
             title="Total Assignments"
-            value="--"
+            value={totalAssignments.toString()}
             icon={ClipboardList}
             iconBg="bg-teal-50"
             iconColor="text-teal-700"
@@ -87,7 +103,7 @@ export const ContributorDashboard: React.FC = () => {
           />
           <MetricCard
             title="Not Started"
-            value="--"
+            value={notStarted.toString()}
             icon={Clock}
             iconBg="bg-slate-50"
             iconColor="text-slate-500"
@@ -95,7 +111,7 @@ export const ContributorDashboard: React.FC = () => {
           />
           <MetricCard
             title="Drafts"
-            value="--"
+            value={drafts.toString()}
             icon={FileEdit}
             iconBg="bg-blue-50"
             iconColor="text-blue-600"
@@ -103,7 +119,7 @@ export const ContributorDashboard: React.FC = () => {
           />
           <MetricCard
             title="Due Soon"
-            value="--"
+            value={dueSoon.toString()}
             icon={Calendar}
             iconBg="bg-amber-50"
             iconColor="text-amber-600"
@@ -111,7 +127,7 @@ export const ContributorDashboard: React.FC = () => {
           />
           <MetricCard
             title="Overdue"
-            value="--"
+            value={overdue.toString()}
             icon={AlertCircle}
             iconBg="bg-rose-50"
             iconColor="text-rose-600"
@@ -119,7 +135,7 @@ export const ContributorDashboard: React.FC = () => {
           />
           <MetricCard
             title="Returned for Correction"
-            value="--"
+            value={corrections.toString()}
             icon={AlertTriangle}
             iconBg="bg-orange-50"
             iconColor="text-orange-600"
@@ -127,7 +143,7 @@ export const ContributorDashboard: React.FC = () => {
           />
           <MetricCard
             title="Submitted"
-            value="--"
+            value={submitted.toString()}
             icon={CheckCircle2}
             iconBg="bg-emerald-50"
             iconColor="text-emerald-600"

@@ -1,8 +1,6 @@
 /**
  * Reviewer & Approver Portal TypeScript Models and Types.
- * 
- * NOTE: These are strictly typed contracts for future backend services.
- * No mocked arrays or seeded records are stored in this file.
+ * MEIL ESG NEXUS Quality Control Layer
  */
 
 export type ReviewStatus =
@@ -13,107 +11,155 @@ export type ReviewStatus =
   | 'approved'
   | 'rejected';
 
-export type ValidationSeverity =
-  | 'critical'
-  | 'warning'
-  | 'information';
+export type ValidationSeverity = 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
+
+export type EvidenceStatus = 'UPLOADED' | 'UNDER_REVIEW' | 'ACCEPTED' | 'REJECTED' | 'SUPERSEDED';
+
+export interface ValidationCheckItem {
+  id: string;
+  code: string;
+  ruleName: string;
+  severity: ValidationSeverity;
+  status: 'PASSED' | 'FAILED' | 'WARNING';
+  message: string;
+  details?: string;
+  blocksApproval?: boolean;
+}
+
+export interface AnomalyInfo {
+  isAnomaly: boolean;
+  yoyChangePercent: number;
+  direction: 'increase' | 'decrease' | 'stable';
+  thresholdPercent: number;
+  explanationProvided?: string;
+  isExplanationAccepted?: boolean;
+  anomalyReason?: string;
+}
+
+export interface CalculationStep {
+  label: string;
+  formula: string;
+  inputValue: string | number;
+  factorUsed: string | number;
+  outputValue: string | number;
+  unit: string;
+}
+
+export interface EvidenceDocumentItem {
+  id: string;
+  name: string;
+  documentType: string;
+  fileFormat: string;
+  fileSizeBytes: number;
+  url: string;
+  uploadedBy: string;
+  uploadedOn: string;
+  status: EvidenceStatus;
+  rejectionReason?: string;
+  replacementRequested?: boolean;
+  comments?: string[];
+  previewUrl?: string;
+}
+
+export interface CorrectionRequestDetails {
+  id: string;
+  assignmentId: string;
+  problem: string;
+  requiredCorrection: string;
+  evidenceNeeded: string;
+  deadline: string;
+  reviewerComment: string;
+  requestedAt: string;
+  requestedBy: string;
+  status: 'PENDING_CONTRIBUTOR' | 'RESUBMITTED' | 'RESOLVED';
+  previousValue: number | string;
+  resubmittedValue?: number | string;
+  resubmittedAt?: string;
+  resubmittedComments?: string;
+}
+
+export interface ReviewCommentItem {
+  id: string;
+  targetType: 'indicator' | 'evidence' | 'submission' | 'validation_issue';
+  targetId?: string;
+  authorName: string;
+  authorRole: string;
+  authorEmail: string;
+  commentText: string;
+  createdAt: string;
+}
+
+export interface ReviewAuditEntry {
+  id: string;
+  assignmentId: string;
+  indicatorCode: string;
+  indicatorName: string;
+  submittedBy: string;
+  reviewedBy: string;
+  reviewDate: string;
+  decision: 'APPROVE' | 'CORRECTION_REQUIRED' | 'REJECT';
+  previousValue?: string | number;
+  newValue?: string | number;
+  unit: string;
+  reason?: string;
+  evidenceSummary: string;
+  comments: string;
+  scopeProject: string;
+  reportingPeriod: string;
+}
 
 export interface ReviewAssignment {
   id: string;
   submissionId: string;
   disclosureCode: string;
   disclosureName: string;
-  brsrSection: string;
-  brsrPrinciple?: string;
+  brsrSection: 'Section A' | 'Section B' | 'Section C';
+  brsrPrinciple: 'P1' | 'P2' | 'P3' | 'P4' | 'P5' | 'P6' | 'P7' | 'P8' | 'P9';
+  isBrsrCore: boolean;
   reportingPeriod: string;
   scopeName: string;
-  contributorName: string;
-  submittedOn: string;
-  validationStatus: string;
-  dueDate?: string;
-  reviewStatus: ReviewStatus;
-}
-
-export interface ReviewDecision {
-  submissionId: string;
-  decision: 'approve' | 'request_correction' | 'reject';
-  comment?: string;
-  reason?: string;
-  affectedField?: string;
-  correctionCategory?: string;
-}
-
-export interface SubmissionReviewDetail {
-  id: string;
-  submissionId: string;
-  disclosureCode: string;
-  disclosureName: string;
-  brsrSection: string;
-  brsrPrinciple?: string;
-  reportingPeriod: string;
-  companyName: string;
+  projectName: string;
   businessUnit: string;
-  projectPlant: string;
-  department: string;
+  subsidiary: string;
   contributorName: string;
   contributorEmail: string;
-  submittedAt: string;
-  reviewStatus: ReviewStatus;
+  submittedOn: string;
+  priority: 'High' | 'Medium' | 'Low';
+  validationStatus: 'Valid' | 'Warning' | 'Critical Failure';
+  evidenceStatus: EvidenceStatus;
   dueDate: string;
-  submittedValue: string;
-  unit: string;
-  previousValue?: string;
-  variance?: string;
-  methodologyNote?: string;
-  contributorRemarks?: string;
+  reviewStatus: ReviewStatus;
 }
 
-export interface ValidationIssue {
+export interface RollupComparisonItem {
+  level: 'Project' | 'Business Unit' | 'Subsidiary' | 'Group';
+  name: string;
+  value: number;
+  unit: string;
+  aggregationMethod: 'SUM' | 'RECALCULATE' | 'WEIGHTED AVERAGE';
+  isReconciled: boolean;
+  notes: string;
+}
+
+export interface DataLineageNode {
   id: string;
-  severity: ValidationSeverity;
-  ruleCode: string;
-  ruleName: string;
-  category: string;
-  disclosure: string;
-  scope: string;
-  contributor: string;
-  reportingPeriod: string;
-  detectedOn: string;
-  status: 'Open' | 'Awaiting Clarification' | 'Corrected' | 'Resolved';
+  stage: string;
+  title: string;
+  source: string;
+  timestamp: string;
+  operator: string;
+  status: 'completed' | 'in_progress' | 'pending';
   details: string;
 }
 
-export interface EvidenceDocument {
+export interface ReviewerNotification {
   id: string;
-  documentName: string;
-  evidenceType: string;
-  fileFormat: string;
-  fileSizeBytes: number;
-  uploadedBy: string;
-  uploadedOn: string;
-  linkedDisclosure: string;
-  projectScope: string;
-  reportingPeriod: string;
-  verificationStatus: 'Pending Verification' | 'Verified' | 'Flagged';
-}
-
-export interface ReviewComment {
-  id: string;
-  submissionId: string;
-  authorName: string;
-  authorRole: string;
-  commentText: string;
-  createdAt: string;
-  isInternal: boolean;
-}
-
-export interface ReviewActivityLog {
-  id: string;
+  title: string;
+  message: string;
+  type: 'submission' | 'resubmission' | 'deadline' | 'validation' | 'anomaly';
   timestamp: string;
-  reviewerAction: string;
-  submissionId: string;
-  disclosureName: string;
-  scope: string;
-  outcome: string;
-  comment?: string;
+  isRead: boolean;
+  assignmentId?: string;
+  priority: 'high' | 'medium' | 'low';
 }
+

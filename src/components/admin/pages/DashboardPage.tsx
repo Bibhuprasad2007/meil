@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useNexusData } from '../../../context/NexusDataContext';
 import {
   Building2,
   Users,
@@ -38,6 +39,17 @@ export const DashboardPage: React.FC = () => {
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [isCreateAssignmentOpen, setIsCreateAssignmentOpen] = useState(false);
   const [isSendReminderOpen, setIsSendReminderOpen] = useState(false);
+
+  const { users, organizations, assignments } = useNexusData();
+
+  const totalUsers = users.length;
+  const totalProjects = organizations.filter(o => o.type === 'project' || o.type === 'plant').length;
+  
+  const totalAssignments = assignments.length || 1;
+  const pendingSubmissions = assignments.filter(a => a.status === 'not_started' || a.status === 'in_progress').length;
+  const awaitingReview = assignments.filter(a => a.status === 'under_review').length;
+  const approved = assignments.filter(a => a.status === 'approved').length;
+  const brsrCompletion = Math.round((approved / totalAssignments) * 100);
 
   return (
     <div className="space-y-8">
@@ -103,7 +115,7 @@ export const DashboardPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
             title="Total Projects / Plants"
-            value="--"
+            value={totalProjects.toString()}
             icon={Building2}
             iconBg="bg-sky-50"
             iconColor="text-sky-600"
@@ -111,7 +123,7 @@ export const DashboardPage: React.FC = () => {
           />
           <MetricCard
             title="Total Users"
-            value="--"
+            value={totalUsers.toString()}
             icon={Users}
             iconBg="bg-blue-50"
             iconColor="text-blue-600"
@@ -119,7 +131,7 @@ export const DashboardPage: React.FC = () => {
           />
           <MetricCard
             title="BRSR Completion"
-            value="--"
+            value={`${brsrCompletion}%`}
             icon={CheckCircle2}
             iconBg="bg-emerald-50"
             iconColor="text-emerald-600"
@@ -127,7 +139,7 @@ export const DashboardPage: React.FC = () => {
           />
           <MetricCard
             title="Pending Submissions"
-            value="--"
+            value={pendingSubmissions.toString()}
             icon={Clock}
             iconBg="bg-amber-50"
             iconColor="text-amber-600"
@@ -135,7 +147,7 @@ export const DashboardPage: React.FC = () => {
           />
           <MetricCard
             title="Overdue Tasks"
-            value="--"
+            value="0"
             icon={AlertOctagon}
             iconBg="bg-rose-50"
             iconColor="text-rose-600"
@@ -143,7 +155,7 @@ export const DashboardPage: React.FC = () => {
           />
           <MetricCard
             title="Validation Errors"
-            value="--"
+            value="0"
             icon={AlertTriangle}
             iconBg="bg-red-50"
             iconColor="text-red-600"
@@ -151,7 +163,7 @@ export const DashboardPage: React.FC = () => {
           />
           <MetricCard
             title="Awaiting Review"
-            value="--"
+            value={awaitingReview.toString()}
             icon={FileCheck}
             iconBg="bg-indigo-50"
             iconColor="text-indigo-600"
@@ -159,7 +171,7 @@ export const DashboardPage: React.FC = () => {
           />
           <MetricCard
             title="Approved / Locked"
-            value="--"
+            value={approved.toString()}
             icon={Lock}
             iconBg="bg-slate-100"
             iconColor="text-slate-600"
